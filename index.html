@@ -27,62 +27,64 @@
     .ad-block {
       position: absolute;
       font-size: 10px;
-      color: white;
-      background: #0074D9;
-      padding: 2px;
-      box-sizing: border-box;
       text-align: center;
+      background: rgba(255, 200, 0, 0.8);
+      border: 1px solid #333;
       overflow: hidden;
     }
-    .wrapper {
+    #ads {
       position: relative;
+      margin-top: -280px;
       width: 480px;
       height: 280px;
+      pointer-events: none;
     }
   </style>
 </head>
 <body>
   <h1>T-Shirt Ad Space Tool</h1>
-  <p>Upload Ad Sales CSV:
-    <input type="file" id="csvFile" accept=".csv" />
+  <p>
+    Upload Ad Sales CSV:
+    <input type="file" id="csvFile" />
     <button onclick="analyze()">Analyze</button>
   </p>
+
   <h2>Shirt Back Layout</h2>
-  <div class="wrapper">
-    <div class="grid" id="grid"></div>
-    <div id="ads"></div>
-  </div>
+  <div class="grid" id="grid"></div>
+  <div id="ads"></div>
 
   <script>
     const adSizes = {
       full: [10, 11.5],
       half: [10, 5.5],
       quarter: [4, 5],
-      eighth: [2.5, 3.5]
+      eighth: [2.5, 3.5],
     };
 
-    function parseCSV(text) {
-      const lines = text.trim().split("\n");
+    function parseCSV(csv) {
+      const lines = csv.trim().split("\n");
       const headers = lines[0].split(",");
       return lines.slice(1).map(line => {
-        const data = line.split(",");
-        return headers.reduce((obj, h, i) => {
-          obj[h.trim()] = data[i]?.trim();
-          return obj;
-        }, {});
+        const cols = line.split(",");
+        const row = {};
+        headers.forEach((h, i) => {
+          row[h.trim()] = cols[i].trim();
+        });
+        return row;
       });
     }
 
     function analyze() {
       const fileInput = document.getElementById("csvFile");
-      const grid = document.getElementById("ads");
-      grid.innerHTML = "";
+      if (!fileInput.files.length) return alert("Please select a file.");
+
+      document.getElementById("ads").innerHTML = ""; // clear previous
 
       const reader = new FileReader();
       reader.onload = () => {
         const csvData = parseCSV(reader.result);
         let x = 0, y = 0;
-        csvData.forEach((row, index) => {
+        csvData.forEach(row => {
           if (!row["Ad Size"]) return;
           const size = adSizes[row["Ad Size"].toLowerCase()];
           if (!size) return;
