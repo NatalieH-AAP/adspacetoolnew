@@ -10,6 +10,7 @@
       padding: 2rem;
       background: #f4f4f4;
     }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(24, 1fr);
@@ -20,34 +21,41 @@
       gap: 1px;
       background: white;
     }
+
     .cell {
       background: #fff;
       border: 1px solid #e0e0e0;
     }
+
     .ad-block {
       position: absolute;
       font-size: 10px;
       text-align: center;
-      background: rgba(255, 200, 0, 0.8);
-      border: 1px solid #333;
-      overflow: hidden;
+      background-color: rgba(255, 0, 0, 0.2);
+      border: 1px solid red;
     }
+
     #ads {
       position: relative;
-      margin-top: -280px;
-      width: 480px;
-      height: 280px;
-      pointer-events: none;
+      margin-top: 1rem;
+    }
+
+    #warning {
+      color: red;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <h1>T-Shirt Ad Space Tool</h1>
-  <p>
+  <form id="uploadForm">
     Upload Ad Sales CSV:
-    <input type="file" id="csvFile" />
-    <button onclick="analyze()">Analyze</button>
-  </p>
+    <input type="file" id="csvFile" accept=".csv" />
+    <button type="submit">Analyze</button>
+  </form>
+
+  <div id="output" style="margin-top: 2rem;"></div>
+  <div id="warning"></div>
 
   <h2>Shirt Back Layout</h2>
   <div class="grid" id="grid"></div>
@@ -55,38 +63,39 @@
 
   <script>
     const adSizes = {
-      full: [10, 11.5],
-      half: [10, 5.5],
-      quarter: [4, 5],
-      eighth: [2.5, 3.5],
+      "full": [10, 11.5],
+      "half": [10, 5.5],
+      "quarter": [4, 5],
+      "eighth": [2.5, 3.5]
     };
 
-    function parseCSV(csv) {
-      const lines = csv.trim().split("\n");
-      const headers = lines[0].split(",");
-      return lines.slice(1).map(line => {
-        const cols = line.split(",");
-        const row = {};
-        headers.forEach((h, i) => {
-          row[h.trim()] = cols[i].trim();
+    const parseCSV = (text) => {
+      const rows = text.trim().split("\n").map(r => r.split(","));
+      const header = rows[0];
+      return rows.slice(1).map(row => {
+        const obj = {};
+        row.forEach((val, idx) => {
+          obj[header[idx].trim()] = val.trim();
         });
-        return row;
+        return obj;
       });
-    }
+    };
 
-    function analyze() {
+    document.getElementById("uploadForm").addEventListener("submit", function (e) {
+      e.preventDefault();
       const fileInput = document.getElementById("csvFile");
-      if (!fileInput.files.length) return alert("Please select a file.");
-
-      document.getElementById("ads").innerHTML = ""; // clear previous
-
       const reader = new FileReader();
+
       reader.onload = () => {
-        const csvData = parseCSV(reader.result);
+        const data = parseCSV(reader.result);
+        const adsContainer = document.getElementById("ads");
+        adsContainer.innerHTML = ""; // clear previous
+
         let x = 0, y = 0;
-        csvData.forEach(row => {
-          if (!row["Ad Size"]) return;
-          const size = adSizes[row["Ad Size"].toLowerCase()];
+
+        data.forEach(row => {
+          const adSizeKey = row["Ad Size"]?.toLowerCase();
+          const size = adSizes[adSizeKey];
           if (!size) return;
 
           const ad = document.createElement("div");
@@ -97,17 +106,22 @@
           ad.style.top = `${y}px`;
           ad.innerText = row["Ad Size"];
 
-          x += size[0] * 20;
-          if (x + size[0] * 20 > 480) {
+          adsContainer.appendChild(ad);
+
+          x += size[0] * 20 + 2;
+          if (x > 480) {
             x = 0;
             y += size[1] * 20 + 2;
           }
-
-          document.getElementById("ads").appendChild(ad);
         });
       };
-      reader.readAsText(fileInput.files[0]);
-    }
+
+      if (fileInput.files.length > 0) {
+        reader.readAsText(fileInput.files[0]);
+      } else {
+        document.getElementById("warning").innerText = "Please upload a CSV file.";
+      }
+    });
 
     // Draw grid
     const gridContainer = document.getElementById("grid");
