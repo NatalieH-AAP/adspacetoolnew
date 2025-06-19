@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>T-Shirt Ad Space Tool</title>
   <style>
     body {
@@ -26,91 +27,92 @@
     .ad-block {
       position: absolute;
       font-size: 10px;
-      text-align: center;
-      background-color: rgba(0, 128, 255, 0.6);
-      color: #fff;
-      border: 1px solid #007acc;
+      background: rgba(255, 100, 100, 0.8);
+      border: 1px solid #c00;
+      color: white;
       padding: 2px;
       box-sizing: border-box;
+      text-align: center;
+      overflow: hidden;
+    }
+    #ads {
+      position: relative;
+      margin-top: 1rem;
     }
   </style>
 </head>
 <body>
   <h1>T-Shirt Ad Space Tool</h1>
   <form id="uploadForm">
-    Upload Ad Sales CSV: <input type="file" id="csvFile" accept=".csv" />
+    Upload Ad Sales CSV: 
+    <input type="file" id="csvFile" accept=".csv" />
     <button type="submit">Analyze</button>
   </form>
   <div id="output" style="margin-top: 2rem;"></div>
-  <div class="grid" id="grid"></div>
+  <h2>Shirt Back Layout</h2>
+  <div id="ads">
+    <div class="grid" id="grid"></div>
+  </div>
+
   <script>
-    const adSizeMap = {
-      "t-shirt 12x3.5 advertisement": "Premium Banner",
-      "t-shirt 12x1.75 advertisement": "Banner",
-      "t-shirt 6x3.5 advertisement": "Half Banner",
-      "t-shirt sleeve ad 4x3.5": "Sleeve",
-      "t-shirt 4x3.5 advertisement": "Four Inch Block",
-      "t-shirt 6x1.75 advertisement": "Six Inch",
-      "t-shirt 4x1.75 advertisement": "Four Inch",
-      "t-shirt 3x1.75 advertisement": "Three Inch",
-      "t-shirt hangtag": "Hang Tag"
+    const sizeMap = {
+      "T-Shirt 12x3.5\" Advertisement": [12, 3.5, "Premium Banner"],
+      "T-Shirt 12x1.75\" Advertisement": [12, 1.75, "Banner"],
+      "T-Shirt 6x3.5\" Advertisement": [6, 3.5, "Half Banner"],
+      "T-Shirt Sleeve Ad 4x3.5\"": [4, 3.5, "Sleeve"],
+      "T-Shirt 4x3.5\" Advertisement": [4, 3.5, "Four Inch Block"],
+      "T-Shirt 6x1.75\" Advertisement": [6, 1.75, "Six Inch"],
+      "T-Shirt 4x1.75\" Advertisement": [4, 1.75, "Four Inch"],
+      "T-Shirt 3x1.75\" Advertisement": [3, 1.75, "Three Inch"],
+      "T-Shirt HangTag": [2, 1, "Hang Tag"]
     };
 
-    const adSizes = {
-      "Premium Banner": [12, 3.5],
-      "Banner": [12, 1.75],
-      "Half Banner": [6, 3.5],
-      "Sleeve": [4, 3.5],
-      "Four Inch Block": [4, 3.5],
-      "Six Inch": [6, 1.75],
-      "Four Inch": [4, 1.75],
-      "Three Inch": [3, 1.75],
-      "Hang Tag": [0, 0]
-    };
-
-    function parseCSV(csv) {
-      const rows = csv.trim().split('\n').map(row => row.split(','));
-      const headers = rows[0].map(h => h.trim().toLowerCase());
-      const data = rows.slice(1).map(row => {
-        const rowData = {};
-        row.forEach((cell, i) => {
-          rowData[headers[i]] = cell.trim();
-        });
-        const key = rowData["ad size"].toLowerCase().replace(/['\"]+/g, '');
-        rowData["ad size name"] = adSizeMap[key] || "Unknown";
-        return rowData;
-      });
-      return data;
-    }
-
-    document.getElementById('uploadForm').addEventListener('submit', (e) => {
+    document.getElementById("uploadForm").addEventListener("submit", function (e) {
       e.preventDefault();
-      const fileInput = document.getElementById('csvFile');
-      const reader = new FileReader();
+      const fileInput = document.getElementById("csvFile");
+      if (!fileInput.files.length) return;
 
+      const reader = new FileReader();
       reader.onload = () => {
-        const csvData = parseCSV(reader.result);
+        const csv = reader.result;
+        const lines = csv.trim().split("\n").filter(l => l.trim());
+        const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+
+        const rows = lines.slice(1).map(line => {
+          const values = line.split(",").map(v => v.trim());
+          const rowObj = {};
+          headers.forEach((header, idx) => {
+            rowObj[header] = values[idx];
+          });
+          return rowObj;
+        });
+
         let x = 0, y = 0;
 
-        csvData.forEach(row => {
-          const sizeName = row["ad size name"];
-          const size = adSizes[sizeName];
-          if (!size || size[0] === 0 || size[1] === 0) return;
+        rows.forEach(row => {
+          const rawSize = row["ad size"];
+          if (!rawSize) return;
 
+          const sizeData = sizeMap[rawSize.trim()];
+          if (!sizeData) {
+            console.warn("Unrecognized size:", rawSize);
+            return;
+          }
+
+          const [width, height, label] = sizeData;
           const ad = document.createElement("div");
           ad.className = "ad-block";
-          ad.style.width = `${size[0] * 20}px`;
-          ad.style.height = `${size[1] * 20}px`;
+          ad.style.width = `${width * 20}px`;
+          ad.style.height = `${height * 20}px`;
           ad.style.left = `${x}px`;
           ad.style.top = `${y}px`;
-          ad.innerText = sizeName;
+          ad.innerText = label;
+          document.getElementById("ads").appendChild(ad);
 
-          document.getElementById("output").appendChild(ad);
-
-          x += size[0] * 20;
-          if (x + size[0] * 20 > 480) {
+          x += width * 20;
+          if (x + width * 20 > 480) {
             x = 0;
-            y += size[1] * 20 + 2;
+            y += height * 20 + 2;
           }
         });
       };
@@ -118,7 +120,6 @@
       reader.readAsText(fileInput.files[0]);
     });
 
-    // Draw grid
     const gridContainer = document.getElementById("grid");
     for (let i = 0; i < 24 * 14; i++) {
       const cell = document.createElement("div");
