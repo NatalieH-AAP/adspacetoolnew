@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>T-Shirt Ad Space Tool</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+      background: #f4f4f4;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(24, 1fr);
+      grid-template-rows: repeat(14, 1fr);
+      width: 480px;
+      height: 280px;
+      border: 2px solid #ccc;
+      gap: 1px;
+      background: white;
+    }
+    .cell {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+    }
+    .ad-block {
+      position: absolute;
+      font-size: 10px;
+      color: white;
+      background: #0074D9;
+      padding: 2px;
+      box-sizing: border-box;
+      text-align: center;
+      overflow: hidden;
+    }
+    .wrapper {
+      position: relative;
+      width: 480px;
+      height: 280px;
+    }
+  </style>
+</head>
+<body>
+  <h1>T-Shirt Ad Space Tool</h1>
+  <p>Upload Ad Sales CSV:
+    <input type="file" id="csvFile" accept=".csv" />
+    <button onclick="analyze()">Analyze</button>
+  </p>
+  <h2>Shirt Back Layout</h2>
+  <div class="wrapper">
+    <div class="grid" id="grid"></div>
+    <div id="ads"></div>
+  </div>
+
+  <script>
+    const adSizes = {
+      full: [10, 11.5],
+      half: [10, 5.5],
+      quarter: [4, 5],
+      eighth: [2.5, 3.5]
+    };
+
+    function parseCSV(text) {
+      const lines = text.trim().split("\n");
+      const headers = lines[0].split(",");
+      return lines.slice(1).map(line => {
+        const data = line.split(",");
+        return headers.reduce((obj, h, i) => {
+          obj[h.trim()] = data[i]?.trim();
+          return obj;
+        }, {});
+      });
+    }
+
+    function analyze() {
+      const fileInput = document.getElementById("csvFile");
+      const grid = document.getElementById("ads");
+      grid.innerHTML = "";
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const csvData = parseCSV(reader.result);
+        let x = 0, y = 0;
+        csvData.forEach((row, index) => {
+          if (!row["Ad Size"]) return;
+          const size = adSizes[row["Ad Size"].toLowerCase()];
+          if (!size) return;
+
+          const ad = document.createElement("div");
+          ad.className = "ad-block";
+          ad.style.width = `${size[0] * 20}px`;
+          ad.style.height = `${size[1] * 20}px`;
+          ad.style.left = `${x}px`;
+          ad.style.top = `${y}px`;
+          ad.innerText = row["Ad Size"];
+
+          x += size[0] * 20;
+          if (x + size[0] * 20 > 480) {
+            x = 0;
+            y += size[1] * 20 + 2;
+          }
+
+          document.getElementById("ads").appendChild(ad);
+        });
+      };
+      reader.readAsText(fileInput.files[0]);
+    }
+
+    // Draw grid
+    const gridContainer = document.getElementById("grid");
+    for (let i = 0; i < 24 * 14; i++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      gridContainer.appendChild(cell);
+    }
+  </script>
+</body>
+</html>
